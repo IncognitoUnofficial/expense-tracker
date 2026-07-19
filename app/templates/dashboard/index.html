@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — Expense Tracker{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <h1 class="font-heading text-2xl font-semibold">Dashboard</h1>
+  <div class="flex items-center gap-3 text-sm font-mono">
+    <a href="{{ url_for('dashboard.index', month=prev_month_value) }}" class="text-wire hover:underline">&larr;</a>
+    <span>{{ selected_month_label }}</span>
+    <a href="{{ url_for('dashboard.index', month=next_month_value) }}" class="text-wire hover:underline">&rarr;</a>
+  </div>
+</div>
+
+{% if not has_expenses %}
+  <div class="bg-white/50 rounded-lg p-8 shadow-sm text-center mb-8">
+    <p class="text-graphite mb-4">You haven't logged any expenses yet.</p>
+    <a href="{{ url_for('expenses.new_expense') }}" class="bg-signal text-ink font-medium rounded-md px-4 py-2 hover:opacity-90 transition-opacity">
+      Add your first expense
+    </a>
+  </div>
+{% endif %}
+
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+  <div class="bg-white/50 rounded-lg p-6 shadow-sm">
+    <p class="text-xs font-mono text-graphite uppercase mb-1">Month total</p>
+    <p class="font-heading text-3xl font-semibold">{{ month_total | money }}</p>
+  </div>
+  <div class="bg-white/50 rounded-lg p-6 shadow-sm">
+    <p class="text-xs font-mono text-graphite uppercase mb-1">Categories used</p>
+    <p class="font-heading text-3xl font-semibold">{{ by_category | length }}</p>
+  </div>
+  <div class="bg-white/50 rounded-lg p-6 shadow-sm">
+    <p class="text-xs font-mono text-graphite uppercase mb-1">Recent expenses</p>
+    <p class="font-heading text-3xl font-semibold">{{ recent_expenses | length }}</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+  <div class="bg-white/50 rounded-lg p-6 shadow-sm">
+    <h2 class="font-heading text-lg font-semibold mb-4">Spend by category</h2>
+    {% if by_category %}
+      <canvas id="categoryChart" height="220"></canvas>
+      <div class="mt-4 space-y-1 text-sm font-mono">
+        {% for row in by_category %}
+          <div class="flex justify-between">
+            <span>{{ row.name }}</span>
+            <span>{{ row.total | money }} ({{ "%.0f"|format(row.percent) }}%)</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-graphite text-sm">No expenses for this month yet.</p>
+    {% endif %}
+  </div>
+
+  <div class="bg-white/50 rounded-lg p-6 shadow-sm">
+    <h2 class="font-heading text-lg font-semibold mb-4">6-month trend</h2>
+    <canvas id="trendChart" height="220"></canvas>
+  </div>
+</div>
+
+<div class="bg-white/50 rounded-lg shadow-sm divide-y divide-graphite/20">
+  <h2 class="font-heading text-lg font-semibold p-6 pb-4">Recent expenses</h2>
+  {% for expense in recent_expenses %}
+    <div class="px-6 py-3 flex items-center justify-between gap-4">
+      <div class="flex-1">
+        <p class="font-medium">{{ expense.description or "(no description)" }}</p>
+        <p class="text-xs text-graphite font-mono">{{ expense.expense_date.strftime("%b %d, %Y") }} · {{ expense.category.name }}</p>
+      </div>
+      <p class="font-mono">{{ expense.amount | money }}</p>
+    </div>
+  {% else %}
+    <p class="p-6 text-graphite text-sm">Nothing to show yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.DASHBOARD_DATA = {
+    categoryLabels: {{ by_category | map(attribute="name") | list | tojson }},
+    categoryTotals: {{ category_chart_totals | tojson }},
+    trendLabels: {{ trend | map(attribute="label") | list | tojson }},
+    trendTotals: {{ trend_chart_totals | tojson }},
+  };
+</script>
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+{% endblock %}

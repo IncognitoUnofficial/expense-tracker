@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% from "_form_helpers.html" import render_field %}
+
+{% block title %}Log in — Expense Tracker{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto bg-white/50 rounded-lg p-8 shadow-sm">
+  <h1 class="font-heading text-2xl font-semibold mb-6">Log in</h1>
+  <form method="post" novalidate>
+    {{ form.hidden_tag() }}
+    {{ render_field(form.email) }}
+    {{ render_field(form.password) }}
+    <button type="submit" class="w-full bg-ink text-paper font-medium rounded-md py-2 mt-2 hover:bg-wire transition-colors">
+      Log in
+    </button>
+  </form>
+  <p class="text-sm text-graphite mt-6">
+    Don't have an account?
+    <a href="{{ url_for('auth.register') }}" class="text-wire font-medium hover:underline">Sign up</a>
+  </p>
+</div>
+{% endblock %}

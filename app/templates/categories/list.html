@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% from "_form_helpers.html" import render_field %}
+
+{% block title %}Categories — Expense Tracker{% endblock %}
+
+{% block content %}
+<h1 class="font-heading text-2xl font-semibold mb-6">Categories</h1>
+
+<div class="bg-white/50 rounded-lg p-6 shadow-sm mb-8">
+  <h2 class="font-heading text-lg font-semibold mb-4">New category</h2>
+  <form method="post" action="{{ url_for('categories.create_category') }}" class="flex items-start gap-3" novalidate>
+    {{ form.hidden_tag() }}
+    <div class="flex-1">
+      {{ form.name(class_="w-full rounded-md border border-graphite/40 bg-white/60 px-3 py-2 text-ink font-body focus:outline-none focus:ring-2 focus:ring-wire", placeholder="e.g. Groceries") }}
+    </div>
+    <button type="submit" class="bg-ink text-paper font-medium rounded-md px-4 py-2 hover:bg-wire transition-colors">
+      Add
+    </button>
+  </form>
+</div>
+
+<div class="bg-white/50 rounded-lg shadow-sm divide-y divide-graphite/20">
+  {% for category in categories %}
+    <div class="p-4 flex items-center justify-between gap-4" data-category-row>
+      <div class="flex-1" data-display>
+        <p class="font-medium">{{ category.name }}</p>
+        <p class="text-xs text-graphite font-mono">{{ category.expense_count }} expense{{ 's' if category.expense_count != 1 }}</p>
+      </div>
+      <div class="flex items-center gap-2" data-display>
+        <button type="button" class="text-sm text-wire hover:underline" data-toggle-edit>Edit</button>
+        <form method="post" action="{{ url_for('categories.delete_category', category_id=category.id) }}" data-confirm="Delete category &quot;{{ category.name }}&quot;?">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="text-sm text-signal hover:underline">Delete</button>
+        </form>
+      </div>
+
+      <form method="post" action="{{ url_for('categories.edit_category', category_id=category.id) }}"
+            class="hidden flex-1 flex items-center gap-3" data-edit-form novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="text" name="name" value="{{ category.name }}" required maxlength="80"
+               class="flex-1 rounded-md border border-graphite/40 bg-white/60 px-3 py-2 text-ink font-body focus:outline-none focus:ring-2 focus:ring-wire">
+        <button type="submit" class="bg-wire text-paper font-medium rounded-md px-3 py-2 text-sm hover:opacity-90">Save</button>
+        <button type="button" class="text-sm text-graphite hover:underline" data-toggle-edit>Cancel</button>
+      </form>
+    </div>
+  {% else %}
+    <p class="p-6 text-graphite text-sm">No categories yet — add your first one above.</p>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/ui.js') }}"></script>
+{% endblock %}

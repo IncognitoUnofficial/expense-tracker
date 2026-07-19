@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Expense Tracker{% endblock %}</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ink: '#14151a',
+            paper: '#ece7de',
+            graphite: '#8d8b82',
+            signal: '#d4a13d',
+            wire: '#4a6b5a',
+          },
+          fontFamily: {
+            heading: ['"Space Grotesk"', 'sans-serif'],
+            body: ['"Inter"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-paper text-ink font-body min-h-screen flex flex-col">
+  {% include "navbar.html" %}
+
+  <main class="flex-1 w-full max-w-5xl mx-auto px-4 py-8">
+    {% include "_flash.html" %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="text-center text-xs text-graphite font-mono py-6">
+    Personal Expense Tracker
+  </footer>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

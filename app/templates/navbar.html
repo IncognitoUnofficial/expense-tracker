@@ -1,0 +1,26 @@
+<nav class="bg-ink text-paper">
+  <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+    <a href="{{ url_for('dashboard.index') if current_user.is_authenticated else url_for('auth.login') }}"
+       class="font-heading text-lg font-semibold tracking-tight">
+      Expense Tracker
+    </a>
+
+    {% if current_user.is_authenticated %}
+      <div class="flex items-center gap-6 text-sm">
+        <a href="{{ url_for('dashboard.index') }}" class="hover:text-signal transition-colors">Dashboard</a>
+        <a href="{{ url_for('expenses.list_expenses') }}" class="hover:text-signal transition-colors">Expenses</a>
+        <a href="{{ url_for('categories.list_categories') }}" class="hover:text-signal transition-colors">Categories</a>
+        <span class="text-graphite font-mono hidden sm:inline">{{ current_user.name }}</span>
+        <form method="post" action="{{ url_for('auth.logout') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="text-graphite hover:text-signal transition-colors">Log out</button>
+        </form>
+      </div>
+    {% else %}
+      <div class="flex items-center gap-6 text-sm">
+        <a href="{{ url_for('auth.login') }}" class="hover:text-signal transition-colors">Log in</a>
+        <a href="{{ url_for('auth.register') }}" class="bg-signal text-ink px-3 py-1.5 rounded-md font-medium hover:opacity-90 transition-opacity">Sign up</a>
+      </div>
+    {% endif %}
+  </div>
+</nav>
