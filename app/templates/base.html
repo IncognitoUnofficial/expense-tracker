@@ -5,6 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Expense Tracker{% endblock %}</title>
 
+  <script>
+    (function () {
+      var stored = localStorage.getItem("theme");
+      var prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      if (stored === "dark" || (!stored && prefersDark)) {
+        document.documentElement.classList.add("dark");
+      }
+    })();
+  </script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -12,6 +22,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
+      darkMode: 'class',
       theme: {
         extend: {
           colors: {
@@ -32,20 +43,82 @@
   </script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 
+  <style type="text/tailwindcss">
+    @layer components {
+      .card {
+        @apply bg-white/60 dark:bg-white/5 border border-graphite/15 dark:border-graphite/25 rounded-xl shadow-sm p-6;
+      }
+      .card-flush {
+        @apply bg-white/60 dark:bg-white/5 border border-graphite/15 dark:border-graphite/25 rounded-xl shadow-sm divide-y divide-graphite/15 dark:divide-graphite/20;
+      }
+      .btn-primary {
+        @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium bg-ink text-paper transition-colors hover:bg-wire dark:bg-paper dark:text-ink dark:hover:bg-signal;
+      }
+      .btn-accent {
+        @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium bg-signal text-ink transition-opacity hover:opacity-90;
+      }
+      .btn-secondary {
+        @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-graphite transition-colors hover:text-ink dark:hover:text-paper;
+      }
+      .btn-icon {
+        @apply inline-flex items-center gap-1.5 text-sm font-medium text-graphite transition-colors hover:text-ink dark:hover:text-paper;
+      }
+      .input {
+        @apply w-full rounded-lg border border-graphite/30 dark:border-graphite/40 bg-white/70 dark:bg-white/5 px-3 py-2 text-sm text-ink dark:text-paper placeholder:text-graphite/70 focus:outline-none focus:ring-2 focus:ring-wire transition-colors;
+      }
+      .label {
+        @apply block text-sm font-medium text-ink dark:text-paper mb-1;
+      }
+      .nav-link {
+        @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-paper/70 transition-colors hover:bg-paper/10 hover:text-paper;
+      }
+      .nav-link-active {
+        @apply bg-paper/15 text-paper;
+      }
+      .badge-up {
+        @apply inline-flex items-center gap-1 rounded-full bg-signal/15 text-signal px-2 py-0.5 text-xs font-mono font-medium;
+      }
+      .badge-down {
+        @apply inline-flex items-center gap-1 rounded-full bg-wire/15 text-wire px-2 py-0.5 text-xs font-mono font-medium;
+      }
+      .progress-track {
+        @apply w-full h-2 rounded-full bg-graphite/20 dark:bg-graphite/25 overflow-hidden;
+      }
+    }
+  </style>
+
   {% block extra_head %}{% endblock %}
 </head>
-<body class="bg-paper text-ink font-body min-h-screen flex flex-col">
-  {% include "navbar.html" %}
+<body class="bg-paper text-ink dark:bg-ink dark:text-paper font-body min-h-screen">
+  {% if current_user.is_authenticated %}
+    {% include "sidebar.html" %}
+  {% endif %}
 
-  <main class="flex-1 w-full max-w-5xl mx-auto px-4 py-8">
-    {% include "_flash.html" %}
-    {% block content %}{% endblock %}
-  </main>
+  <div class="{{ 'lg:pl-64' if current_user.is_authenticated else '' }} min-h-screen flex flex-col">
+    {% if current_user.is_authenticated %}
+      <div class="lg:hidden flex items-center justify-between px-4 py-3 border-b border-graphite/15 dark:border-graphite/25">
+        <span class="font-heading font-semibold">Expense Tracker</span>
+        <button type="button" id="sidebar-toggle" class="p-2 -mr-2" aria-label="Open menu">
+          {% from "_icons.html" import icon %}
+          {{ icon("menu", "w-6 h-6") }}
+        </button>
+      </div>
+    {% endif %}
 
-  <footer class="text-center text-xs text-graphite font-mono py-6">
-    Personal Expense Tracker
-  </footer>
+    <main class="flex-1 w-full max-w-5xl mx-auto px-4 py-8">
+      {% include "_flash.html" %}
+      {% block content %}{% endblock %}
+    </main>
 
+    <footer class="text-center text-xs text-graphite font-mono py-6">
+      Personal Expense Tracker
+    </footer>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+  {% if current_user.is_authenticated %}
+    <script src="{{ url_for('static', filename='js/sidebar.js') }}"></script>
+  {% endif %}
   {% block scripts %}{% endblock %}
 </body>
 </html>

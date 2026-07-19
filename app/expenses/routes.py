@@ -1,11 +1,13 @@
-from datetime import date
+import csv
+import io
 
-from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
+from flask import Blueprint, Response, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
 from app.expenses.forms import ExpenseForm
 from app.extensions import db
 from app.models import Category, Expense
+from app.utils import month_bounds
 
 expenses_bp = Blueprint("expenses", __name__, url_prefix="/expenses")
 
@@ -29,20 +31,20 @@ def _parse_month(month_str):
         return None
     try:
         year, month = (int(part) for part in month_str.split("-"))
-        start = date(year, month, 1)
     except (ValueError, TypeError):
         return None
-    end = date(year + 1, 1, 1) if month == 12 else date(year, month + 1, 1)
-    return start, end
+    if not 1 <= month <= 12:
+        return None
+    return month_bounds(year, month)
 
 
-@expenses_bp.route("/", methods=["GET"])
-@login_required
-def list_expenses():
+def _filtered_expenses_query():
+    """Build the expenses select for the current user, applying the
+    category/month/q query-string filters shared by the list view and the
+    CSV export."""
     category_id = request.args.get("category", type=int)
     month_str = request.args.get("month", "")
     search = request.args.get("q", "").strip()
-    page = request.args.get("page", 1, type=int)
 
     query = db.select(Expense).filter_by(user_id=current_user.id)
 
@@ -57,18 +59,46 @@ def list_expenses():
     if search:
         query = query.filter(Expense.description.ilike(f"%{search}%"))
 
-    query = query.order_by(Expense.expense_date.desc(), Expense.id.desc())
+    return query.order_by(Expense.expense_date.desc(), Expense.id.desc())
 
-    pagination = db.paginate(query, page=page, per_page=20, error_out=False)
+
+@expenses_bp.route("/", methods=["GET"])
+@login_required
+def list_expenses():
+    page = request.args.get("page", 1, type=int)
+    pagination = db.paginate(_filtered_expenses_query(), page=page, per_page=20, error_out=False)
 
     return render_template(
         "expenses/list.html",
         pagination=pagination,
         expenses=pagination.items,
         categories=_user_categories(),
-        selected_category=category_id,
-        selected_month=month_str,
-        search=search,
+        selected_category=request.args.get("category", type=int),
+        selected_month=request.args.get("month", ""),
+        search=request.args.get("q", "").strip(),
+    )
+
+
+@expenses_bp.route("/export", methods=["GET"])
+@login_required
+def export_expenses():
+    expenses = db.session.execute(_filtered_expenses_query()).scalars().all()
+
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(["Date", "Category", "Description", "Amount"])
+    for expense in expenses:
+        writer.writerow([
+            expense.expense_date.isoformat(),
+            expense.category.name,
+            expense.description or "",
+            f"{expense.amount:.2f}",
+        ])
+
+    return Response(
+        buffer.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment; filename=expenses.csv"},
     )
 
 

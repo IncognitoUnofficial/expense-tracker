@@ -33,6 +33,21 @@ def test_dashboard_excludes_other_months_from_total(client, registered_user, fir
     assert _month_total_shown(response.data) == "30.00"
 
 
+def test_dashboard_month_over_month_shows_new_without_prior_month(client, registered_user, first_category_id):
+    create_expense(client, first_category_id, amount="30.00", expense_date="2026-07-05")
+
+    response = client.get("/?month=2026-07")
+    assert b"New" in response.data
+
+
+def test_dashboard_month_over_month_shows_percent_increase(client, registered_user, first_category_id):
+    create_expense(client, first_category_id, amount="100.00", expense_date="2026-06-05")
+    create_expense(client, first_category_id, amount="150.00", expense_date="2026-07-05")
+
+    response = client.get("/?month=2026-07")
+    assert b"50%" in response.data
+
+
 def test_dashboard_recent_expenses_lists_latest_first(client, registered_user, first_category_id):
     create_expense(client, first_category_id, description="First", expense_date="2026-07-01")
     create_expense(client, first_category_id, description="Second", expense_date="2026-07-15")

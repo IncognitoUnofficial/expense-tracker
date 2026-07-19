@@ -1,9 +1,9 @@
 {% macro render_field(field, extra_classes="") %}
   <div class="mb-4">
-    <label for="{{ field.id }}" class="block text-sm font-medium text-ink mb-1">
+    <label for="{{ field.id }}" class="label">
       {{ field.label.text }}
     </label>
-    {{ field(class_="w-full rounded-md border border-graphite/40 bg-white/60 px-3 py-2 text-ink font-body focus:outline-none focus:ring-2 focus:ring-wire " ~ extra_classes) }}
+    {{ field(class_="input " ~ extra_classes) }}
     {% if field.errors %}
       <ul class="mt-1 text-xs text-signal font-mono">
         {% for error in field.errors %}

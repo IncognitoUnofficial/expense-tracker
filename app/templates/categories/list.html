@@ -1,50 +1,84 @@
 {% extends "base.html" %}
-{% from "_form_helpers.html" import render_field %}
+{% from "_icons.html" import icon %}
 
 {% block title %}Categories — Expense Tracker{% endblock %}
 
 {% block content %}
 <h1 class="font-heading text-2xl font-semibold mb-6">Categories</h1>
 
-<div class="bg-white/50 rounded-lg p-6 shadow-sm mb-8">
+<div class="card mb-8">
   <h2 class="font-heading text-lg font-semibold mb-4">New category</h2>
-  <form method="post" action="{{ url_for('categories.create_category') }}" class="flex items-start gap-3" novalidate>
+  <form method="post" action="{{ url_for('categories.create_category') }}" class="flex flex-wrap items-start gap-3" novalidate>
     {{ form.hidden_tag() }}
-    <div class="flex-1">
-      {{ form.name(class_="w-full rounded-md border border-graphite/40 bg-white/60 px-3 py-2 text-ink font-body focus:outline-none focus:ring-2 focus:ring-wire", placeholder="e.g. Groceries") }}
+    <div class="flex-1 min-w-[160px]">
+      <label class="label">Name</label>
+      {{ form.name(class_="input", placeholder="e.g. Groceries") }}
     </div>
-    <button type="submit" class="bg-ink text-paper font-medium rounded-md px-4 py-2 hover:bg-wire transition-colors">
-      Add
+    <div class="w-40">
+      <label class="label">Budget (optional)</label>
+      {{ form.monthly_budget(class_="input", placeholder="e.g. 200") }}
+    </div>
+    <button type="submit" class="btn-primary mt-6">
+      {{ icon("plus", "w-4 h-4") }} Add
     </button>
   </form>
 </div>
 
-<div class="bg-white/50 rounded-lg shadow-sm divide-y divide-graphite/20">
+<div class="card-flush">
   {% for category in categories %}
-    <div class="p-4 flex items-center justify-between gap-4" data-category-row>
-      <div class="flex-1" data-display>
-        <p class="font-medium">{{ category.name }}</p>
-        <p class="text-xs text-graphite font-mono">{{ category.expense_count }} expense{{ 's' if category.expense_count != 1 }}</p>
-      </div>
-      <div class="flex items-center gap-2" data-display>
-        <button type="button" class="text-sm text-wire hover:underline" data-toggle-edit>Edit</button>
-        <form method="post" action="{{ url_for('categories.delete_category', category_id=category.id) }}" data-confirm="Delete category &quot;{{ category.name }}&quot;?">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button type="submit" class="text-sm text-signal hover:underline">Delete</button>
-        </form>
+    {% set spent = spent_this_month.get(category.id, 0) %}
+    {% set budget_percent = (spent / category.monthly_budget * 100) if category.monthly_budget else none %}
+    <div class="p-4" data-category-row>
+      <div class="flex items-center justify-between gap-4" data-display>
+        <div class="flex-1 min-w-0">
+          <p class="font-medium">{{ category.name }}</p>
+          <p class="text-xs text-graphite font-mono">
+            {{ category.expense_count }} expense{{ 's' if category.expense_count != 1 }}
+            {% if category.monthly_budget %}
+              · {{ spent | money }} of {{ category.monthly_budget | money }} this month
+            {% endif %}
+          </p>
+          {% if budget_percent is not none %}
+            <div class="progress-track mt-2 max-w-xs">
+              <div class="h-full rounded-full {{ 'bg-signal' if budget_percent >= 100 else 'bg-wire' }}"
+                   style="width: {{ [budget_percent, 100] | min }}%"></div>
+            </div>
+            {% if budget_percent >= 100 %}
+              <p class="text-xs text-signal font-mono mt-1">Over budget</p>
+            {% endif %}
+          {% endif %}
+        </div>
+        <div class="flex items-center gap-4 shrink-0">
+          <button type="button" class="btn-icon" data-toggle-edit>{{ icon("edit", "w-4 h-4") }} Edit</button>
+          <form method="post" action="{{ url_for('categories.delete_category', category_id=category.id) }}" data-confirm="Delete category &quot;{{ category.name }}&quot;?">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn-icon hover:!text-signal">{{ icon("trash", "w-4 h-4") }} Delete</button>
+          </form>
+        </div>
       </div>
 
       <form method="post" action="{{ url_for('categories.edit_category', category_id=category.id) }}"
-            class="hidden flex-1 flex items-center gap-3" data-edit-form novalidate>
+            class="hidden flex flex-wrap items-end gap-3 mt-3" data-edit-form novalidate>
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <input type="text" name="name" value="{{ category.name }}" required maxlength="80"
-               class="flex-1 rounded-md border border-graphite/40 bg-white/60 px-3 py-2 text-ink font-body focus:outline-none focus:ring-2 focus:ring-wire">
-        <button type="submit" class="bg-wire text-paper font-medium rounded-md px-3 py-2 text-sm hover:opacity-90">Save</button>
-        <button type="button" class="text-sm text-graphite hover:underline" data-toggle-edit>Cancel</button>
+        <div class="flex-1 min-w-[160px]">
+          <label class="label">Name</label>
+          <input type="text" name="name" value="{{ category.name }}" required maxlength="80" class="input">
+        </div>
+        <div class="w-40">
+          <label class="label">Budget</label>
+          <input type="number" step="0.01" min="0" name="monthly_budget"
+                 value="{{ category.monthly_budget if category.monthly_budget else '' }}"
+                 placeholder="none" class="input">
+        </div>
+        <button type="submit" class="btn-primary">Save</button>
+        <button type="button" class="btn-secondary" data-toggle-edit>Cancel</button>
       </form>
     </div>
   {% else %}
-    <p class="p-6 text-graphite text-sm">No categories yet — add your first one above.</p>
+    <div class="p-8 text-center text-graphite text-sm">
+      {{ icon("empty", "w-10 h-10 mx-auto mb-3 text-graphite/60") }}
+      No categories yet — add your first one above.
+    </div>
   {% endfor %}
 </div>
 {% endblock %}

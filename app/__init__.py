@@ -25,11 +25,13 @@ def create_app(config_class=Config):
     from app.categories.routes import categories_bp
     from app.expenses.routes import expenses_bp
     from app.dashboard.routes import dashboard_bp
+    from app.account.routes import account_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(categories_bp)
     app.register_blueprint(expenses_bp)
     app.register_blueprint(dashboard_bp)
+    app.register_blueprint(account_bp)
 
     @app.template_filter("money")
     def money_filter(value):

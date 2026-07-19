@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% from "_form_helpers.html" import render_field %}
+
+{% block title %}Account — Expense Tracker{% endblock %}
+
+{% block content %}
+<h1 class="font-heading text-2xl font-semibold mb-6">Account</h1>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+  <div class="card">
+    <h2 class="font-heading text-lg font-semibold mb-4">Profile</h2>
+    <form method="post" action="{{ url_for('account.update_profile') }}" novalidate>
+      {{ profile_form.hidden_tag() }}
+      {{ render_field(profile_form.name) }}
+      {{ render_field(profile_form.email) }}
+      <button type="submit" class="btn-primary mt-2">Save changes</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2 class="font-heading text-lg font-semibold mb-4">Change password</h2>
+    <form method="post" action="{{ url_for('account.change_password') }}" novalidate>
+      {{ password_form.hidden_tag() }}
+      {{ render_field(password_form.current_password) }}
+      {{ render_field(password_form.new_password) }}
+      {{ render_field(password_form.confirm_new_password) }}
+      <button type="submit" class="btn-primary mt-2">Update password</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,10 +1,13 @@
 from flask import Blueprint, abort, flash, redirect, render_template, url_for
 from flask_login import current_user, login_required
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
 from app.categories.forms import CategoryForm
 from app.extensions import db
-from app.models import Category
+from app.models import Category, Expense
+from app.utils import month_bounds
+from datetime import date
 
 categories_bp = Blueprint("categories", __name__, url_prefix="/categories")
 
@@ -16,6 +19,21 @@ def _get_owned_category(category_id):
     return category
 
 
+def _spent_this_month_by_category():
+    today = date.today()
+    start, end = month_bounds(today.year, today.month)
+    rows = db.session.execute(
+        db.select(Expense.category_id, func.coalesce(func.sum(Expense.amount), 0))
+        .filter(
+            Expense.user_id == current_user.id,
+            Expense.expense_date >= start,
+            Expense.expense_date < end,
+        )
+        .group_by(Expense.category_id)
+    ).all()
+    return {category_id: total for category_id, total in rows}
+
+
 @categories_bp.route("/", methods=["GET"])
 @login_required
 def list_categories():
@@ -25,7 +43,12 @@ def list_categories():
         .order_by(Category.name)
     ).scalars().all()
     form = CategoryForm()
-    return render_template("categories/list.html", categories=categories, form=form)
+    return render_template(
+        "categories/list.html",
+        categories=categories,
+        form=form,
+        spent_this_month=_spent_this_month_by_category(),
+    )
 
 
 @categories_bp.route("/", methods=["POST"])
@@ -33,7 +56,11 @@ def list_categories():
 def create_category():
     form = CategoryForm()
     if form.validate_on_submit():
-        category = Category(user_id=current_user.id, name=form.name.data.strip())
+        category = Category(
+            user_id=current_user.id,
+            name=form.name.data.strip(),
+            monthly_budget=form.monthly_budget.data,
+        )
         db.session.add(category)
         try:
             db.session.commit()
@@ -42,7 +69,7 @@ def create_category():
             db.session.rollback()
             flash(f'You already have a category named "{form.name.data.strip()}".', "error")
     else:
-        flash("Please provide a valid category name.", "error")
+        flash("Please provide a valid category name and budget.", "error")
 
     return redirect(url_for("categories.list_categories"))
 
@@ -54,6 +81,7 @@ def edit_category(category_id):
     form = CategoryForm()
     if form.validate_on_submit():
         category.name = form.name.data.strip()
+        category.monthly_budget = form.monthly_budget.data
         try:
             db.session.commit()
             flash("Category updated.", "success")
@@ -61,7 +89,7 @@ def edit_category(category_id):
             db.session.rollback()
             flash(f'You already have a category named "{form.name.data.strip()}".', "error")
     else:
-        flash("Please provide a valid category name.", "error")
+        flash("Please provide a valid category name and budget.", "error")
 
     return redirect(url_for("categories.list_categories"))
 

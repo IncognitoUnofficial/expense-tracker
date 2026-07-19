@@ -79,6 +79,32 @@ def test_delete_expense(client, registered_user, first_category_id):
     assert b"Delete me" not in response.data
 
 
+def test_csv_export_returns_all_matching_rows(client, registered_user, first_category_id):
+    create_expense(client, first_category_id, amount="10.00", description="Coffee")
+    create_expense(client, first_category_id, amount="20.00", description="Bus ticket")
+
+    response = client.get("/expenses/export")
+    assert response.status_code == 200
+    assert response.mimetype == "text/csv"
+    assert "attachment" in response.headers["Content-Disposition"]
+
+    body = response.data.decode()
+    rows = body.strip().splitlines()
+    assert rows[0] == "Date,Category,Description,Amount"
+    assert any("Coffee" in row and "10.00" in row for row in rows[1:])
+    assert any("Bus ticket" in row and "20.00" in row for row in rows[1:])
+
+
+def test_csv_export_respects_filters(client, registered_user, first_category_id):
+    create_expense(client, first_category_id, description="Coffee", expense_date="2026-07-05")
+    create_expense(client, first_category_id, description="Bus ticket", expense_date="2026-07-05")
+
+    response = client.get("/expenses/export?q=coffee")
+    body = response.data.decode()
+    assert "Coffee" in body
+    assert "Bus ticket" not in body
+
+
 def test_cannot_access_another_users_expense(client, registered_user, first_category_id):
     create_expense(client, first_category_id, description="Mine")
     with client.application.app_context():

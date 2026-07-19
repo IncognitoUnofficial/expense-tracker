@@ -4,7 +4,7 @@
 {% block title %}{{ "Edit expense" if mode == "edit" else "Add expense" }} — Expense Tracker{% endblock %}
 
 {% block content %}
-<div class="max-w-lg mx-auto bg-white/50 rounded-lg p-8 shadow-sm">
+<div class="max-w-lg mx-auto card">
   <h1 class="font-heading text-2xl font-semibold mb-6">
     {{ "Edit expense" if mode == "edit" else "Add expense" }}
   </h1>
@@ -15,10 +15,10 @@
     {{ render_field(form.expense_date) }}
     {{ render_field(form.description) }}
     <div class="flex items-center gap-3 mt-2">
-      <button type="submit" class="bg-ink text-paper font-medium rounded-md px-4 py-2 hover:bg-wire transition-colors">
+      <button type="submit" class="btn-primary">
         {{ "Save changes" if mode == "edit" else "Add expense" }}
       </button>
-      <a href="{{ url_for('expenses.list_expenses') }}" class="text-sm text-graphite hover:underline">Cancel</a>
+      <a href="{{ url_for('expenses.list_expenses') }}" class="btn-secondary">Cancel</a>
     </div>
   </form>
 </div>

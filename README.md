@@ -1,12 +1,14 @@
 # Personal Expense Tracker
 
-A full-stack expense tracker: register, organize spending into categories,
-log expenses, filter/search them, and see a monthly dashboard (totals,
-category breakdown, 6-month trend, recent activity).
+A full-stack expense tracker: register, organize spending into categories
+(with optional monthly budgets), log expenses, filter/search/export them,
+and see a monthly dashboard (totals with month-over-month change, category
+breakdown with budget progress, 6-month trend, recent activity).
 
 **Stack:** Python/Flask, MySQL (SQLAlchemy ORM), session-cookie auth
 (Flask-Login), server-rendered Jinja templates styled with Tailwind (CDN),
-vanilla JS for small interactive touches. No frontend framework, no npm
+vanilla JS for small interactive touches (dark mode, mobile nav, delete
+confirmations, debounced search, charts). No frontend framework, no npm
 build step.
 
 ## Project layout
@@ -14,9 +16,11 @@ build step.
 ```
 app/
   auth/          register / login / logout
-  categories/     category CRUD
-  expenses/       expense CRUD + filtering
+  account/        profile + password settings
+  categories/     category CRUD + budgets
+  expenses/       expense CRUD + filtering + CSV export
   dashboard/      aggregated summary view
+  utils.py        shared month-bounds helpers
   models.py       User, Category, Expense (+ relationships)
   templates/, static/
 schema.sql        CREATE TABLE statements (run once against MySQL)
@@ -73,6 +77,16 @@ mysql -u <user> -p expense_tracker < schema.sql
 mysql -u <user> -p expense_tracker_test < schema.sql   -- only needed to run pytest
 ```
 
+**Already set up the database before?** `schema.sql` now includes a
+`monthly_budget` column on `categories` (used by the budgets feature) that
+didn't exist in the original schema. `CREATE TABLE IF NOT EXISTS` won't add
+it to a table that already exists, so run this once against both databases
+instead of re-running `schema.sql`:
+
+```sql
+ALTER TABLE categories ADD COLUMN monthly_budget DECIMAL(10, 2) NULL;
+```
+
 ### 5. Run the app
 
 ```bash
@@ -108,6 +122,9 @@ Work through this after setup to confirm everything works end-to-end.
 - [ ] Edit a category's name — updates in place
 - [ ] Delete a category that has no expenses — removed
 - [ ] Try to delete a category that has expenses — blocked with an explanatory message, category still there
+- [ ] Set a monthly budget on a category — a progress bar appears showing this month's spend against it
+- [ ] Add expenses past the budget — the bar switches color and shows "Over budget"
+- [ ] Leave the budget field blank — no progress bar shown for that category
 
 **Expenses**
 - [ ] Add an expense (amount, category, date, description) — appears in the expense list and reflects on the dashboard
@@ -118,14 +135,28 @@ Work through this after setup to confirm everything works end-to-end.
 - [ ] Search by description text — only matching expenses show
 - [ ] Clear filters — full list returns
 - [ ] Add 20+ expenses and confirm pagination controls appear and work
+- [ ] Click "Export CSV" with no filters — downloads a CSV with all your expenses
+- [ ] Apply a filter, then export — the CSV only contains the filtered rows
 
 **Dashboard**
 - [ ] With no expenses yet, dashboard shows an empty state with a call to action
 - [ ] Month total matches the sum of that month's expenses
-- [ ] Spend-by-category chart/list matches the actual per-category totals for the month
+- [ ] The month total shows a "New" badge when there's no prior-month data, or a percentage badge (colored/arrowed up or down) once a previous month has expenses to compare against
+- [ ] Spend-by-category chart/list matches the actual per-category totals for the month, with a budget progress bar where a budget is set
 - [ ] Navigate to the previous/next month — total and breakdown update accordingly
 - [ ] 6-month trend chart shows a bar per month with sensible totals
 - [ ] Recent expenses list shows your most recent entries, newest first (independent of the month you're viewing)
+
+**Account**
+- [ ] Update your name/email from the Account page — reflected immediately
+- [ ] Try changing your email to one already used by another account — rejected with a clear error
+- [ ] Change your password with the wrong current password — rejected with a clear error
+- [ ] Change your password correctly, log out, log back in with the new password — works
+
+**Appearance**
+- [ ] Toggle dark mode from the sidebar — the whole app switches themes, and the choice survives a page refresh
+- [ ] Resize the browser to a narrow/mobile width — the sidebar collapses behind a hamburger menu that opens/closes correctly
+- [ ] Charts and progress bars remain legible in both light and dark mode
 
 **General**
 - [ ] Refresh any page — session persists (still logged in) via the session cookie

@@ -1,20 +1,26 @@
 {% extends "base.html" %}
+{% from "_icons.html" import icon %}
 
 {% block title %}Expenses — Expense Tracker{% endblock %}
 
 {% block content %}
-<div class="flex items-center justify-between mb-6">
+<div class="flex items-center justify-between mb-6 gap-3">
   <h1 class="font-heading text-2xl font-semibold">Expenses</h1>
-  <a href="{{ url_for('expenses.new_expense') }}"
-     class="bg-signal text-ink font-medium rounded-md px-4 py-2 hover:opacity-90 transition-opacity">
-    + Add expense
-  </a>
+  <div class="flex items-center gap-3">
+    <a href="{{ url_for('expenses.export_expenses', category=selected_category, month=selected_month, q=search) }}"
+       class="btn-secondary">
+      {{ icon("download", "w-4 h-4") }} Export CSV
+    </a>
+    <a href="{{ url_for('expenses.new_expense') }}" class="btn-accent">
+      {{ icon("plus", "w-4 h-4") }} Add expense
+    </a>
+  </div>
 </div>
 
-<form method="get" class="bg-white/50 rounded-lg p-4 shadow-sm mb-6 flex flex-wrap gap-3 items-end" id="filter-form">
+<form method="get" class="card mb-6 flex flex-wrap gap-3 items-end" id="filter-form">
   <div>
-    <label class="block text-xs font-mono text-graphite mb-1">Category</label>
-    <select name="category" class="rounded-md border border-graphite/40 bg-white/60 px-3 py-2 text-sm" onchange="this.form.submit()">
+    <label class="label">Category</label>
+    <select name="category" class="input" onchange="this.form.submit()">
       <option value="">All</option>
       {% for category in categories %}
         <option value="{{ category.id }}" {{ "selected" if selected_category == category.id }}>{{ category.name }}</option>
@@ -22,40 +28,44 @@
     </select>
   </div>
   <div>
-    <label class="block text-xs font-mono text-graphite mb-1">Month</label>
-    <input type="month" name="month" value="{{ selected_month }}"
-           class="rounded-md border border-graphite/40 bg-white/60 px-3 py-2 text-sm" onchange="this.form.submit()">
+    <label class="label">Month</label>
+    <input type="month" name="month" value="{{ selected_month }}" class="input" onchange="this.form.submit()">
   </div>
   <div class="flex-1 min-w-[180px]">
-    <label class="block text-xs font-mono text-graphite mb-1">Search description</label>
-    <input type="text" name="q" value="{{ search }}" placeholder="e.g. coffee" id="search-input"
-           class="w-full rounded-md border border-graphite/40 bg-white/60 px-3 py-2 text-sm">
+    <label class="label">Search description</label>
+    <div class="relative">
+      <span class="absolute left-3 top-1/2 -translate-y-1/2 text-graphite">{{ icon("search", "w-4 h-4") }}</span>
+      <input type="text" name="q" value="{{ search }}" placeholder="e.g. coffee" id="search-input" class="input pl-9">
+    </div>
   </div>
   {% if selected_category or selected_month or search %}
-    <a href="{{ url_for('expenses.list_expenses') }}" class="text-sm text-graphite hover:underline pb-2">Clear filters</a>
+    <a href="{{ url_for('expenses.list_expenses') }}" class="btn-secondary">Clear filters</a>
   {% endif %}
 </form>
 
-<div class="bg-white/50 rounded-lg shadow-sm divide-y divide-graphite/20">
+<div class="card-flush">
   {% for expense in expenses %}
     <div class="p-4 flex items-center justify-between gap-4">
-      <div class="flex-1">
-        <p class="font-medium">{{ expense.description or "(no description)" }}</p>
+      <div class="flex-1 min-w-0">
+        <p class="font-medium truncate">{{ expense.description or "(no description)" }}</p>
         <p class="text-xs text-graphite font-mono">
           {{ expense.expense_date.strftime("%b %d, %Y") }} · {{ expense.category.name }}
         </p>
       </div>
-      <p class="font-mono text-lg">{{ expense.amount | money }}</p>
-      <div class="flex items-center gap-3">
-        <a href="{{ url_for('expenses.edit_expense', expense_id=expense.id) }}" class="text-sm text-wire hover:underline">Edit</a>
+      <p class="font-mono text-lg shrink-0">{{ expense.amount | money }}</p>
+      <div class="flex items-center gap-4 shrink-0">
+        <a href="{{ url_for('expenses.edit_expense', expense_id=expense.id) }}" class="btn-icon">{{ icon("edit", "w-4 h-4") }} Edit</a>
         <form method="post" action="{{ url_for('expenses.delete_expense', expense_id=expense.id) }}" data-confirm="Delete this expense?">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button type="submit" class="text-sm text-signal hover:underline">Delete</button>
+          <button type="submit" class="btn-icon hover:!text-signal">{{ icon("trash", "w-4 h-4") }} Delete</button>
         </form>
       </div>
     </div>
   {% else %}
-    <p class="p-6 text-graphite text-sm">No expenses match these filters.</p>
+    <div class="p-8 text-center text-graphite text-sm">
+      {{ icon("empty", "w-10 h-10 mx-auto mb-3 text-graphite/60") }}
+      No expenses match these filters.
+    </div>
   {% endfor %}
 </div>
 
@@ -63,13 +73,13 @@
   <div class="flex items-center justify-between mt-6 text-sm font-mono">
     <div>
       {% if pagination.has_prev %}
-        <a href="{{ url_for('expenses.list_expenses', page=pagination.prev_num, category=selected_category, month=selected_month, q=search) }}" class="text-wire hover:underline">&larr; Prev</a>
+        <a href="{{ url_for('expenses.list_expenses', page=pagination.prev_num, category=selected_category, month=selected_month, q=search) }}" class="btn-icon">{{ icon("chevron-left", "w-4 h-4") }} Prev</a>
       {% endif %}
     </div>
     <div class="text-graphite">Page {{ pagination.page }} of {{ pagination.pages }}</div>
     <div>
       {% if pagination.has_next %}
-        <a href="{{ url_for('expenses.list_expenses', page=pagination.next_num, category=selected_category, month=selected_month, q=search) }}" class="text-wire hover:underline">Next &rarr;</a>
+        <a href="{{ url_for('expenses.list_expenses', page=pagination.next_num, category=selected_category, month=selected_month, q=search) }}" class="btn-icon">Next {{ icon("chevron-right", "w-4 h-4") }}</a>
       {% endif %}
     </div>
   </div>
